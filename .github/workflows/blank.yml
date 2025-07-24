@@ -1,4 +1,4 @@
-name: AWS OIDC Exploit
+name: Assume AWS Role via OIDC
 
 on:
   workflow_dispatch:
@@ -11,21 +11,24 @@ jobs:
   assume-role:
     runs-on: ubuntu-latest
     steps:
-    - name: Assume Role via OIDC
-      run: |
-        echo "Getting OIDC token..."
-        export AWS_ROLE_ARN="arn:aws:iam::481008523238:role/sts-lab-2-target"
-        export AWS_WEB_IDENTITY_TOKEN_FILE=$(mktemp)
-        curl -s $ACTIONS_ID_TOKEN_REQUEST_URL \
-          -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" > $AWS_WEB_IDENTITY_TOKEN_FILE
+      - name: Install jq and AWS CLI
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq awscli
 
-        export AWS_REGION=us-east-1
+      - name: Get OIDC Token and Assume Role
+        env:
+          AWS_ROLE_ARN: arn:aws:iam::481008523238:role/sts-lab-2-target
+          AWS_REGION: us-east-1
+        run: |
+          echo "Getting OIDC token..."
+          ID_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r .value)
 
-        echo "Calling STS to assume the role..."
-        creds=$(aws sts assume-role-with-web-identity \
-          --role-arn "$AWS_ROLE_ARN" \
-          --role-session-name exploitSession \
-          --web-identity-token file://$AWS_WEB_IDENTITY_TOKEN_FILE \
-          --duration-seconds 900)
+          echo "Assuming role..."
+          CREDS=$(aws sts assume-role-with-web-identity \
+            --role-arn "$AWS_ROLE_ARN" \
+            --role-session-name github-actions-session \
+            --web-identity-token "$ID_TOKEN" \
+            --duration-seconds 900)
 
-        echo "$creds" | jq .
+          echo "✅ Role assumed!"
+          echo "$CREDS" | jq .
