@@ -10,11 +10,8 @@ permissions:
 jobs:
   assume-role:
     runs-on: ubuntu-latest
-    steps:
-      - name: Install jq and AWS CLI
-        run: |
-          sudo apt-get update && sudo apt-get install -y jq awscli
 
+    steps:
       - name: Get OIDC Token and Assume Role
         env:
           AWS_ROLE_ARN: arn:aws:iam::481008523238:role/sts-lab-2-target
@@ -30,5 +27,5 @@ jobs:
             --web-identity-token "$ID_TOKEN" \
             --duration-seconds 900)
 
-          echo "✅ Role assumed!"
+          echo "✅ Temporary credentials:"
           echo "$CREDS" | jq .
