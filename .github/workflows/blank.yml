@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Get OIDC Token and Assume Role
         env:
-          AWS_ROLE_ARN: arn:aws:iam::481008523238:role/sts-lab-2-target
+          AWS_ROLE_ARN: arn:aws:iam::481008523238:role/whitebox-lab-2-github-actions-role
           AWS_REGION: us-east-1
         run: |
           echo "Getting OIDC token..."
